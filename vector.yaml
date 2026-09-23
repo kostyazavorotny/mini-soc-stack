@@ -1,0 +1,26 @@
+sources:
+  nginx_logs:
+    type: file
+    include:
+      - /var/log/nginx/access.log
+    read_from: beginning
+
+transforms:
+  format_logs:
+    type: remap
+    inputs:
+      - nginx_logs
+    source: |
+      .type = "nginx_access"
+
+sinks:
+  opensearch_sink:
+    type: elasticsearch
+    inputs:
+      - format_logs
+    endpoints: 
+      - http://opensearch:9200
+    mode: bulk
+    bulk:
+      index: "nginx-logs-%Y.%m.%d"
+    suppress_type_name: true

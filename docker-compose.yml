@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  web-target:
+    image: nginx:alpine
+    container_name: web_target
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx_logs:/var/log/nginx
+
+  vector:
+    image: timberio/vector:0.34.X-alpine
+    container_name: vector_shipper
+    volumes:
+      - ./vector.yaml:/etc/vector/vector.yaml:ro
+      - ./nginx_logs:/var/log/nginx:ro
+    depends_on:
+      - opensearch
+
+  opensearch:
+    image: opensearchproject/opensearch:2.11.0
+    container_name: opensearch_node
+    environment:
+      - discovery.type=single-node
+      - "DISABLE_SECURITY_PLUGIN=true" # Для быстрого тестового стенда
+      - "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+
+  soc-detector:
+    build: ./detector
+    container_name: soc_detector_service
+    depends_on:
+      - opensearch
+    restart: always
